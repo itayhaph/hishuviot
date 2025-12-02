@@ -10,7 +10,7 @@ def solve_q1_c():
     # Factor is (1 - 100*eta)
     # 1. 0 < eta < 0.01
     # 2. 0.01 < eta < 0.02
-    # 3. eta > 0.02
+    # 3. 0.02 < eta 
     etas = [0.005, 0.015, 0.023]
     regime_names = ["Monotonic Convergence", "Oscillatory Convergence", "Divergence"]
     
@@ -25,10 +25,10 @@ def solve_q1_c():
         # Initialization
         w_empirical[0] = w_start
         w_theoretical[0] = w_start
-        
         current_w = w_start
+
         for t in range(n_steps):
-            # Gradient calculation: dE/dw = x * (wx - 3x) = x^2 * (w - 3)
+            # Gradient calculation: dE/dw = x^2 * (w - 3)
             gradient = (x**2) * (current_w - w_optimal)
             
             # Updating the rule:
@@ -42,13 +42,13 @@ def solve_q1_c():
         
         ax = axes[i]
         
-        # Plot empirical results as scatter points
+        # Plotting empirical results as scatter points
         ax.scatter(steps, w_empirical, color='blue', label='Empirical (Simulation)', zorder=3)
         
-        # Plot theoretical prediction as a dashed line
+        # Plotting theoretical prediction as a dashed line
         ax.plot(steps, w_theoretical, color='red', linestyle='--', label='Theoretical Prediction', linewidth=2)
         
-        # Plot the optimal weight line
+        # Plotting the optimal weight line
         ax.axhline(y=w_optimal, color='green', linestyle=':', label='Optimal w (3.0)', alpha=0.7)
         
         ax.set_title(f"{regime_names[i]}\n($\\eta={eta}$)")
