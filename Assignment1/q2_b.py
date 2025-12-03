@@ -21,7 +21,6 @@ def solve_q2_b():
     filename = 'tagged_data.npz'
     X, Y = load_data(filename)
     
-    
     # 1. Randomly divide into train (70%) and test (30%)
     num_samples = X.shape[0]
     indices = np.arange(num_samples)
@@ -59,7 +58,7 @@ def solve_q2_b():
         
         # Calculate w* using linalg.solve function
         w_star = np.linalg.solve(A, XtY)
-        
+        print(w_star)
         # Calculating Errors
         mse_train = np.mean((X_train @ w_star - Y_train) ** 2)/2
         mse_test = np.mean((X_test @ w_star - Y_test) ** 2)/2
@@ -67,11 +66,15 @@ def solve_q2_b():
         ridge_train_errors.append(mse_train)
         ridge_test_errors.append(mse_test)
 
-    _, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10), sharex=True)
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10)) 
+    
+    # 2. Add space between plots to prevent overlap
+    plt.subplots_adjust(hspace=0.4) 
     
     # Train Error Plot
     ax1.plot(lambdas, ridge_train_errors, 'b-o', label='Train Error')
     ax1.set_xscale('log')
+    ax1.set_xlabel('Lambda (log scale)') # Added X-label here
     ax1.set_ylabel('MSE (Train)')
     ax1.set_title('Part B: Ridge Regression - Train Error vs Lambda')
     ax1.grid(True)
@@ -80,7 +83,7 @@ def solve_q2_b():
     # Test Error Plot
     ax2.plot(lambdas, ridge_test_errors, 'r-s', label='Test Error')
     ax2.set_xscale('log')
-    ax2.set_xlabel('Lambda (log scale)')
+    ax2.set_xlabel('Lambda (log scale)') # X-label already existed here
     ax2.set_ylabel('MSE (Test)')
     ax2.set_title('Part B: Ridge Regression - Test Error vs Lambda')
     ax2.grid(True)

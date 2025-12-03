@@ -33,15 +33,17 @@ def solve_q2_a():
     X_test = add_bias(X_test_raw)
     
     epochs = 100
-    eta = 0.001  
+    eta = 0.00001
     n_features = X_train.shape[1]
     
     # Initialize weights (including bias)
-    w = np.random.randn(n_features) * 0.01
+    w = np.random.randn(n_features) 
     train_errors = []
     test_errors = []
+    print(len(X),len(X[0]))
     
     for _ in range(epochs):
+        errorSum = 0
         # Shuffle training data at start of each epoch
         perm = np.random.permutation(len(Y_train))
         X_shuffled = X_train[perm]
@@ -55,12 +57,13 @@ def solve_q2_a():
             y_hat = np.dot(w, x_i)
             gradient = (y_hat - y_i) * x_i
             
+            errorSum += ((y_hat-y_i)**2)/2
             # Update rule
             w = w - eta * gradient
         
         # Calculate errors after each epoch
         # MSE = mean((y_pred - y_true)^2)/2
-        mse_train = np.mean((X_train @ w - Y_train) ** 2)/2
+        mse_train = errorSum/len(X_train)
         mse_test = np.mean((X_test @ w - Y_test) ** 2)/2
         
         train_errors.append(mse_train)
@@ -76,7 +79,6 @@ def solve_q2_a():
     plt.legend()
     plt.grid(True)
     plt.show()
-
 
 if __name__ == "__main__":
     solve_q2_a()

@@ -161,15 +161,16 @@ def ex1():
     X_test = add_bias(X_test_raw)
     
     epochs = 100
-    eta = 0.001  
+    eta = 0.00001
     n_features = X_train.shape[1]
     
     # Initialize weights (including bias)
-    w = np.random.randn(n_features) * 0.01
+    w = np.random.randn(n_features) 
     train_errors = []
     test_errors = []
     
     for _ in range(epochs):
+        errorSum = 0
         # Shuffle training data at start of each epoch
         perm = np.random.permutation(len(Y_train))
         X_shuffled = X_train[perm]
@@ -183,12 +184,13 @@ def ex1():
             y_hat = np.dot(w, x_i)
             gradient = (y_hat - y_i) * x_i
             
+            errorSum += ((y_hat-y_i)**2)/2
             # Update rule
             w = w - eta * gradient
         
         # Calculate errors after each epoch
         # MSE = mean((y_pred - y_true)^2)/2
-        mse_train = np.mean((X_train @ w - Y_train) ** 2)/2
+        mse_train = errorSum/len(X_train)
         mse_test = np.mean((X_test @ w - Y_test) ** 2)/2
         
         train_errors.append(mse_train)
@@ -235,11 +237,15 @@ def ex1():
         ridge_train_errors.append(mse_train)
         ridge_test_errors.append(mse_test)
 
-    _, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10), sharex=True)
+    _, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10)) 
+    
+    # 2. Add space between plots to prevent overlap
+    plt.subplots_adjust(hspace=0.4) 
     
     # Train Error Plot
     ax1.plot(lambdas, ridge_train_errors, 'b-o', label='Train Error')
     ax1.set_xscale('log')
+    ax1.set_xlabel('Lambda (log scale)') # Added X-label here
     ax1.set_ylabel('MSE (Train)')
     ax1.set_title('Part B: Ridge Regression - Train Error vs Lambda')
     ax1.grid(True)
@@ -248,7 +254,7 @@ def ex1():
     # Test Error Plot
     ax2.plot(lambdas, ridge_test_errors, 'r-s', label='Test Error')
     ax2.set_xscale('log')
-    ax2.set_xlabel('Lambda (log scale)')
+    ax2.set_xlabel('Lambda (log scale)') # X-label already existed here
     ax2.set_ylabel('MSE (Test)')
     ax2.set_title('Part B: Ridge Regression - Test Error vs Lambda')
     ax2.grid(True)
