@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from tqdm import tqdm
 
 def sigmoid(z):
     return 1 / (1 + np.exp(-z))
@@ -50,7 +49,7 @@ def logisticRegression(weights,X_train,y0_train,X_val,y0_val,lamb,eta,n_epochs):
         w -= eta*dw
         b -= eta*db
 
-    return trainLossHistory, valLossHistory, trainAccHistory, valAccHistory,w 
+    return trainLossHistory, valLossHistory, trainAccHistory, valAccHistory, w, b 
 
 def plotHelper(x_values, results, x_label, title_suffix, opt_val):
         # Extract final loss and accuracy for train and val
@@ -85,13 +84,92 @@ def plotHelper(x_values, results, x_label, title_suffix, opt_val):
         plt.pause(0.5)
 
 def plotWeightsHeatmap(weights, lamb_val):
-    limit = np.max(np.abs(weights))
     plt.figure(figsize=(8, 6))
-    im = plt.imshow(weights.reshape(28, 28), cmap='bwr', vmin=-limit, vmax=limit)
+    v_limit = np.max(np.abs(weights))
+    im = plt.imshow(weights.reshape(28, 28), cmap='bwr',vmin=-v_limit,vmax=v_limit)
     plt.colorbar(im)
     plt.title(f"Weights Visualization (Lambda={lamb_val})", fontsize=12, fontweight='bold', pad=15)
     plt.axis('off')
-    plt.show()
+
+def prediction_histogram(weights, bias, num_samples=1000):
+    random_images = np.random.uniform(0, 1, (num_samples, 784))
+    z = np.dot(random_images, weights) + bias
+    probabilities = sigmoid(z)
+    
+    plt.figure(figsize=(8, 5))
+    plt.hist(probabilities, bins=30, color='purple', edgecolor='black', alpha=0.7)
+    plt.title("Model Response to Random Noise")
+    plt.xlabel("Predicted Probability (y)")
+    plt.ylabel("Frequency")
+    plt.grid(axis='y', linestyle='--', alpha=0.6)
+    plt.pause(0.5)
+    
+    return probabilities
+
+def multinomialRegression(weights,X_train, y0_train, X_val, y0_val, lamb, eta, n_epochs, batch_size=64):
+    num_samples = X_train.shape[0]
+    num_classes = 10
+
+    w = weights.copy()
+    b = np.zeros((1, num_classes))
+
+    def to_one_hot(labels, k):
+        oh = np.zeros((labels.size, k))
+        oh[np.arange(labels.size), labels.astype(int)] = 1
+        return oh
+
+    y_train_oh = to_one_hot(y0_train, num_classes)
+    
+    for i in range(n_epochs):
+        indices = np.random.permutation(num_samples)
+        X_sh = X_train[indices]
+        Y_sh = y_train_oh[indices]
+
+        for i in range(0, num_samples, batch_size):
+            xi = X_sh[i:i+batch_size]
+            yi = Y_sh[i:i+batch_size]
+            curr_batch = xi.shape[0]
+            
+            z = np.dot(xi, w) + b
+            
+            # P(y = ki) = exp(zi) / sum(exp(zj))
+            exp_z = np.exp(z - np.max(z, axis=1, keepdims=True))
+            y_hat = exp_z / np.sum(exp_z, axis=1, keepdims=True)
+
+            error = y_hat - yi
+            
+            dw = (1 / curr_batch) * np.dot(xi.T, error) + (lamb * w)
+            db = (1 / curr_batch) * np.sum(error, axis=0, keepdims=True)
+
+            w -= eta * dw
+            b -= eta * db
+            
+        # Getting the argument with highest value to determine which class the model predicted
+        val_preds = np.argmax(np.dot(X_val, w) + b, axis=1)
+        val_acc = np.mean(val_preds == y0_val)
+
+    return w, b, val_acc
+
+def find_best_params(X_train, y0_train, X_val, y0_val):
+    etas = [0.1, 0.01]
+    lambdas = [0, 1e-4, 1e-3]
+    w_init = np.random.standard_normal((X_train.shape[1], 10)) * 0.01
+    best_acc = 0
+    best_params = {}
+
+    # Grid Search:
+    for e in etas:
+        for l in lambdas:
+            w, b, final_val_acc = multinomialRegression(
+                w_init,X_train, y0_train, X_val, y0_val, 
+                lamb=l, eta=e, n_epochs=50, batch_size=64
+            )
+            
+            if final_val_acc > best_acc:
+                best_acc = final_val_acc
+                best_params = {'eta': e, 'lambda': l, 'w': w, 'b': b}
+    
+    return best_params
 
 def q3():
     # Section a:
@@ -118,7 +196,7 @@ def q3():
     w = np.random.standard_normal(len(X_train[0]))
 
     # Executing training process for Section c:
-    t_loss, v_loss, t_acc, v_acc,_ = logisticRegression(w,X_train, y0_train, X_val, y0_val, lamb, eta, 1000)
+    t_loss, v_loss, t_acc, v_acc,_,_ = logisticRegression(w,X_train, y0_train, X_val, y0_val, lamb, eta, 1000)
 
     _, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
 
@@ -152,7 +230,7 @@ def q3():
     # Using grid search
     for e in etas:
         for l in lambdas:
-            _, _, _, v_acc_hist,_ = logisticRegression(w,X_train, y0_train, X_val, y0_val, l, e, 1000)
+            _, _, _, v_acc_hist,_,_ = logisticRegression(w,X_train, y0_train, X_val, y0_val, l, e, 1000)
             final_acc = v_acc_hist[-1]
             if final_acc > best_val_acc:
                 best_val_acc = final_acc
@@ -171,12 +249,14 @@ def q3():
     # Section f:
     # Using optimal lambda,eta and test values to determine the test error and accuracy
     res_test = logisticRegression(w,X_train, y0_train, X_test, y0_test, opt_lamb, opt_eta, 1000)
+    
     print("First error value: ",res_test[1][0]," Last error value:",res_test[1][-1])
-    print('First Acc:',res_test[3][0]," Last Acc:",res_test[3][-1])
+    print('First Accuracy:',res_test[3][0]," Last Accuracy:",res_test[3][-1])
 
     # Section g:
     # Visualize weights with optimal lambda
     final_weights_opt = res_test[4]
+    final_bias = res_test[5]
     plotWeightsHeatmap(final_weights_opt, opt_lamb)
 
     # Section h:
@@ -184,6 +264,28 @@ def q3():
     res_no_reg = logisticRegression(w, X_train, y0_train, X_test, y0_test, 0, opt_eta, 1000)
     weights_no_reg = res_no_reg[4]
     plotWeightsHeatmap(weights_no_reg, 0)
+
+    # Bonus Section a:
+    prediction_histogram(final_weights_opt,final_bias)
+
+    # Bonus Section b:
+    data_bonus = np.load("bonus.npz", allow_pickle=True)
+    X_train_bonus = data_bonus["X_train"].reshape(data_bonus["X_train"].shape[0], -1)
+    y0_train_bonus = data_bonus["y_train"]
+    X_val_bonus = data_bonus["X_validation"].reshape(data_bonus["X_validation"].shape[0], -1)
+    y0_val_bonus = data_bonus["y_validation"]
+    X_test_bonus = data_bonus["X_test"].reshape(data_bonus["X_test"].shape[0], -1)
+    y0_test_bonus = data_bonus["y_test"]
+
+    print("Calculating final accuracy, this might take a minute")
+    best_params = find_best_params(X_train_bonus,y0_train_bonus,X_val_bonus,y0_val_bonus)    
+    final_test_logits = np.dot(X_test_bonus, best_params['w']) + best_params['b']
+    final_test_preds = np.argmax(final_test_logits, axis=1)
+    final_test_acc = np.mean(final_test_preds == y0_test_bonus)
+    print(f"Final test accuracy: {final_test_acc*100}%")
+    
+    plt.show()
+
 
 if __name__ == "__main__":
     q3()
