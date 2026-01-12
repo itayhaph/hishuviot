@@ -162,7 +162,7 @@ def find_best_params(X_train, y0_train, X_val, y0_val):
         for l in lambdas:
             w, b, final_val_acc = multinomialRegression(
                 w_init,X_train, y0_train, X_val, y0_val, 
-                lamb=l, eta=e, n_epochs=50, batch_size=64
+                lamb=l, eta=e, n_epochs=60, batch_size=64
             )
             
             if final_val_acc > best_acc:
