@@ -73,3 +73,26 @@ class PreferenceLearner:
                 self.preferences[a] += self.eta * (reward - self.average_reward) * (1 - probs[i])
             else:
                 self.preferences[a] -= self.eta * (reward - self.average_reward) * probs[i]
+
+class AdversarialGoalKeeper(GoalKeeper):
+    def __init__(self, seed=None):
+        super().__init__()
+        self.rng = np.random.default_rng(seed)
+        # מודל פנימי של הערכת הבועט
+        self.kicker_q = {'left': 0.0, 'right': 0.0}
+        self.kicker_counts = {'left': 0, 'right': 0}
+
+    def predecide_goal_keeper_action(self):
+        # חיזוי הפעולה הבאה של הבועט על סמך המודל הפנימי
+        if self.kicker_q['left'] > self.kicker_q['right']:
+            return 'left'
+        elif self.kicker_q['right'] > self.kicker_q['left']:
+            return 'right'
+        else:
+            return self.rng.choice(['left', 'right'])
+
+    def update_internal_model(self, action, reward):
+        # עדכון המודל הפנימי לפי תוצאת הבעיטה האחרונה
+        self.kicker_counts[action] += 1
+        n = self.kicker_counts[action]
+        self.kicker_q[action] += (reward - self.kicker_q[action]) / n
