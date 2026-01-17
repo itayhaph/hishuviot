@@ -6,7 +6,12 @@ except ImportError:  # pragma: no cover - optional dependency
 from agents import MeanQLearner, FixedRateQLearner, PreferenceLearner
 from environment import get_goal_keeper
 
-GOAL_KEEPERS = ["biased",]
+GOAL_KEEPERS = ["adverserial"]
+AGENTS_TO_TEST = [
+    (MeanQLearner, {"epsilon": 0.045}),
+    (FixedRateQLearner, {"eta": 0.075, "epsilon": 0.075}),
+    (PreferenceLearner, {"eta": 0.85})
+]
 
 def run_match(agent, goal_keeper, kicks_per_match=50):
     total_reward = 0
@@ -17,18 +22,27 @@ def run_match(agent, goal_keeper, kicks_per_match=50):
         total_reward += reward
     return total_reward
 
-def main(matches=10000, kicks_per_match=50):
-    
-    # example testing of a specific agent:
+def main(matches=12000, kicks_per_match=50):
     for goal_keeper_type in GOAL_KEEPERS:
-        results = []
-        for match_num in tqdm(range(matches), desc=f"Testing {goal_keeper_type} Goal Keeper") if tqdm else range(matches):
-            goal_keeper = get_goal_keeper(goal_keeper_type)
-            agent = MeanQLearner(epsilon=0.1, seed=None)
-            result = run_match(agent, goal_keeper, kicks_per_match=kicks_per_match)
-            results.append(result)
-        avg_reward = sum(results) / matches
-        print(f"Goal Keeper: {goal_keeper_type}, MeanQLearner Average Reward over {matches} matches: {avg_reward:.3f}")
+        print(f"\n--- Testing vs. {goal_keeper_type} Goal Keeper ---")
+        
+        # Iterate over each agent type
+        for agent_class, params in AGENTS_TO_TEST:
+            results = []
+            agent_name = agent_class.__name__
+            
+            # Run simulation matches
+            for _ in tqdm(range(matches), desc=f"Simulating {agent_name}"):
+                # Create a fresh environment for each match
+                goal_keeper = get_goal_keeper(goal_keeper_type)
+                # Initialize the agent with its specific optimal parameters
+                agent = agent_class(**params)
+                
+                result = run_match(agent, goal_keeper, kicks_per_match=kicks_per_match)
+                results.append(result)
+            
+            avg_reward = sum(results) / matches
+            print(f"Agent: {agent_name} | Average Reward: {avg_reward:.3f}")
 
 if __name__ == "__main__":
-    main(matches=10000, kicks_per_match=50)
+    main()

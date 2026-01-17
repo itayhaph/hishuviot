@@ -69,6 +69,7 @@ class AdversarialGoalKeeper(GoalKeeper):
         self.rng = np.random.default_rng(seed)
         self.kicker_q = {'left': 0.0, 'right': 0.0}
         self.kicker_counts = {'left': 0, 'right': 0}
+        self.action = None
 
     def predecide_goal_keeper_action(self):
         if self.kicker_q['left'] > self.kicker_q['right']:
@@ -99,5 +100,5 @@ def get_goal_keeper(goal_keeper_type, seed=None):
     if goal_keeper_type == 'biased':
         return Biased_Goal_Keeper(theta=rng.random()*0.3 + 0.35, seed=seed)  # biased between [0.35, 0.65]
     else:
-        raise ValueError(f"Unknown goal keeper type: {goal_keeper_type}")
+        return AdversarialGoalKeeper(seed=seed)
     
