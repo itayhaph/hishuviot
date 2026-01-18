@@ -40,6 +40,7 @@ class FixedRateQLearner:
         return self.rng.choice(best_actions)
     
     def update(self, action, reward):
+        # Move the Q-value toward the reward by a fraction of the error (delta)
         self.q[action] += (reward - self.q[action]) * self.eta
 
 class PreferenceLearner:
@@ -54,22 +55,26 @@ class PreferenceLearner:
         self.t = 0
     
     def _get_probabilities(self):
+        # Turning numerical preferences into a probability distribution using Softmax
         prefs = np.array([self.preferences[a] for a in self.actions])
         exp_prefs = np.exp(prefs)
         probs = exp_prefs / np.sum(exp_prefs)
         return probs
     
     def choose_action(self):
+        # Pick an action based on the weighted probabilities
         probs = self._get_probabilities()
         return self.rng.choice(self.actions, p=probs)
     
     def update(self, action, reward):
         self.t += 1
+        # Update 'baseline' reward
         self.average_reward += (reward - self.average_reward) / self.t
         probs = self._get_probabilities()
 
         for i, a in enumerate(self.actions):
             if a == action:
+                # If action was good (above average), increase its preference. If bad, decrease it.
                 self.preferences[a] += self.eta * (reward - self.average_reward) * (1 - probs[i])
             else:
                 self.preferences[a] -= self.eta * (reward - self.average_reward) * probs[i]
